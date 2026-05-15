@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    >
+
+    <title>Bao wa Msitu</title>
+
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+
+      #unity-container {
+        background: #000;
+      }
+
+      #unity-container.unity-desktop {
+        position: relative;
+        width: 960px;
+        height: 540px;
+        margin: auto;
+      }
+
+      #unity-container.unity-mobile {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: #000;
+      }
+
+      #unity-canvas {
+        background: #000;
+        display: block;
+      }
+
+      #unity-canvas.unity-mobile {
+        position: absolute;
+        background: #000;
+        display: block;
+        touch-action: none;
+      }
+
+      #unity-logo-title-footer,
+      #unity-build-title {
+        display: none !important;
+      }
+
+      #unity-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        background: transparent;
+        padding: 8px 12px;
+      }
+
+      #unity-container.unity-mobile #unity-footer {
+        display: none !important;
+      }
+
+      #unity-fullscreen-button {
+        opacity: 0.85;
+      }
+
+      #unity-warning {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        z-index: 20;
+      }
+
+      #rotate-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: #000;
+        color: #efeebf;
+        font-family: monospace;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        box-sizing: border-box;
+      }
+
+      #rotate-overlay p {
+        max-width: 360px;
+        font-size: 18px;
+        line-height: 1.4;
+      }
+
+      body.is-mobile.is-portrait #rotate-overlay {
+        display: flex;
+      }
+
+      body.is-mobile.is-portrait #unity-container.unity-mobile {
+        visibility: hidden;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width="960" height="540" tabindex="-1"></canvas>
+
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+
+      <div id="unity-warning"></div>
+
+      <div id="unity-footer">
+        <div id="unity-fullscreen-button" title="Fullscreen"></div>
+      </div>
+    </div>
+
+    <div id="rotate-overlay">
+      <p>Tournez votre appareil en mode paysage pour jouer à Bao wa Msitu.</p>
+    </div>
+
+    <script>
+      var canvas = document.querySelector("#unity-canvas");
+      var unityContainer = document.querySelector("#unity-container");
+
+      var gameAspectRatio = 16 / 9;
+
+      function isMobileDevice() {
+        var userAgentIsMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        // Modern iPads often identify as "Macintosh" in Safari,
+        // so this catches touch-based iPad/tablet behaviour.
+        var isTouchTablet =
+          navigator.platform === "MacIntel" &&
+          navigator.maxTouchPoints &&
+          navigator.maxTouchPoints > 1;
+
+        return userAgentIsMobile || isTouchTablet;
+      }
+
+      function isPortraitViewport() {
+        if (window.visualViewport) {
+          return window.visualViewport.height > window.visualViewport.width;
+        }
+
+        return window.innerHeight > window.innerWidth;
+      }
+
+      function updateOrientationClass() {
+        var mobile = isMobileDevice();
+        var portrait = isPortraitViewport();
+
+        document.body.classList.toggle("is-mobile", mobile);
+        document.body.classList.toggle("is-portrait", portrait);
+      }
+
+      function getVisibleViewport() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var left = 0;
+        var top = 0;
+
+        if (window.visualViewport) {
+          width = window.visualViewport.width;
+          height = window.visualViewport.height;
+          left = window.visualViewport.offsetLeft;
+          top = window.visualViewport.offsetTop;
+        }
+
+        return {
+          width: width,
+          height: height,
+          left: left,
+          top: top
+        };
+      }
+
+      function fitCanvasToLandscapeViewport() {
+        updateOrientationClass();
+
+        if (!isMobileDevice()) {
+          return;
+        }
+
+        var viewport = getVisibleViewport();
+
+        unityContainer.style.left = viewport.left + "px";
+        unityContainer.style.top = viewport.top + "px";
+        unityContainer.style.width = viewport.width + "px";
+        unityContainer.style.height = viewport.height + "px";
+
+        var availableWidth = viewport.width;
+        var availableHeight = viewport.height;
+
+        var canvasWidth = availableWidth;
+        var canvasHeight = canvasWidth / gameAspectRatio;
+
+        if (canvasHeight > availableHeight) {
+          canvasHeight = availableHeight;
+          canvasWidth = canvasHeight * gameAspectRatio;
+        }
+
+        var canvasLeft = (availableWidth - canvasWidth) / 2;
+        var canvasTop = (availableHeight - canvasHeight) / 2;
+
+        canvas.style.width = canvasWidth + "px";
+        canvas.style.height = canvasHeight + "px";
+        canvas.style.left = canvasLeft + "px";
+        canvas.style.top = canvasTop + "px";
+      }
+
+      updateOrientationClass();
+
+      window.addEventListener("resize", function () {
+        updateOrientationClass();
+        fitCanvasToLandscapeViewport();
+      });
+
+      window.addEventListener("orientationchange", function () {
+        setTimeout(function () {
+          updateOrientationClass();
+          fitCanvasToLandscapeViewport();
+        }, 250);
+
+        setTimeout(function () {
+          updateOrientationClass();
+          fitCanvasToLandscapeViewport();
+        }, 700);
+      });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", function () {
+          updateOrientationClass();
+          fitCanvasToLandscapeViewport();
+        });
+
+        window.visualViewport.addEventListener("scroll", function () {
+          updateOrientationClass();
+          fitCanvasToLandscapeViewport();
+        });
+      }
+
+      function unityShowBanner(msg, type) {
+        var warningBanner = document.querySelector("#unity-warning");
+
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? "block" : "none";
+        }
+
+        var div = document.createElement("div");
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+
+        if (type == "error") {
+          div.style = "background: red; padding: 10px;";
+        } else {
+          if (type == "warning") {
+            div.style = "background: yellow; padding: 10px;";
+          }
+
+          setTimeout(function () {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/bao.loader.js";
+
+      var config = {
+        arguments: [],
+        dataUrl: buildUrl + "/bao.data",
+        frameworkUrl: buildUrl + "/bao.framework.js",
+        codeUrl: buildUrl + "/bao.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "rp.solar",
+        productName: "Bao wa Msitu",
+        productVersion: "2.0",
+        showBanner: unityShowBanner
+      };
+
+      if (isMobileDevice()) {
+        unityContainer.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+
+        fitCanvasToLandscapeViewport();
+
+        // Uncomment this if mobile/tablet performance becomes too heavy.
+        // config.devicePixelRatio = 1;
+      } else {
+        canvas.style.width = "960px";
+        canvas.style.height = "540px";
+      }
+
+      document.querySelector("#unity-loading-bar").style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          document.querySelector("#unity-progress-bar-full").style.width =
+            100 * progress + "%";
+        })
+          .then((unityInstance) => {
+            document.querySelector("#unity-loading-bar").style.display = "none";
+
+            var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+
+            if (fullscreenButton != null) {
+              fullscreenButton.onclick = () => {
+                unityInstance.SetFullscreen(1);
+              };
+            }
+
+            fitCanvasToLandscapeViewport();
+          })
+          .catch((message) => {
+            alert(message);
+          });
+      };
+
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
