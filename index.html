@@ -9,7 +9,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
-    <title>Bao wa Msitu debug v00</title>
+    <title>Bao wa Msitu debug v02</title>
 
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
@@ -31,15 +31,15 @@
 
       #unity-container.unity-desktop {
         position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
+        left: 50%;
+        top: 50%;
+        width: 960px;
+        height: 540px;
         margin: 0;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        overflow: visible;
         background: #000;
+        transform: translate(-50%, -50%) scale(var(--desktop-scale, 1));
+        transform-origin: center center;
       }
 
       #unity-container.unity-mobile {
@@ -58,10 +58,8 @@
       }
 
       #unity-container.unity-desktop #unity-canvas {
-        width: min(100vw, calc(100vh * 16 / 9));
-        height: min(100vh, calc(100vw * 9 / 16));
-        max-width: 100vw;
-        max-height: 100vh;
+        width: 960px !important;
+        height: 540px !important;
         background: #000;
         display: block;
       }
@@ -167,6 +165,8 @@
       var unityContainer = document.querySelector("#unity-container");
 
       var gameAspectRatio = 16 / 9;
+      var desktopBaseWidth = 960;
+      var desktopBaseHeight = 540;
 
       function isMobileDevice() {
         var userAgentIsMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -257,26 +257,30 @@
           return;
         }
 
-        unityContainer.style.left = "";
-        unityContainer.style.top = "";
-        unityContainer.style.width = "100vw";
-        unityContainer.style.height = "100vh";
-
         var availableWidth = window.innerWidth;
         var availableHeight = window.innerHeight;
 
-        var canvasWidth = availableWidth;
-        var canvasHeight = canvasWidth / gameAspectRatio;
+        var scale = Math.min(
+          availableWidth / desktopBaseWidth,
+          availableHeight / desktopBaseHeight
+        );
 
-        if (canvasHeight > availableHeight) {
-          canvasHeight = availableHeight;
-          canvasWidth = canvasHeight * gameAspectRatio;
-        }
+        scale = Math.max(0.1, scale);
 
-        canvas.style.width = canvasWidth + "px";
-        canvas.style.height = canvasHeight + "px";
+        unityContainer.style.setProperty("--desktop-scale", scale);
+
+        unityContainer.style.left = "50%";
+        unityContainer.style.top = "50%";
+        unityContainer.style.width = desktopBaseWidth + "px";
+        unityContainer.style.height = desktopBaseHeight + "px";
+
+        canvas.style.width = desktopBaseWidth + "px";
+        canvas.style.height = desktopBaseHeight + "px";
         canvas.style.left = "";
         canvas.style.top = "";
+
+        canvas.width = desktopBaseWidth;
+        canvas.height = desktopBaseHeight;
       }
 
       function fitCanvasToCurrentViewport() {
@@ -368,6 +372,7 @@
       } else {
         unityContainer.className = "unity-desktop";
         canvas.className = "";
+
         fitCanvasToDesktopViewport();
       }
 
@@ -389,6 +394,10 @@
             if (fullscreenButton != null) {
               fullscreenButton.onclick = () => {
                 unityInstance.SetFullscreen(1);
+
+                setTimeout(function () {
+                  fitCanvasToCurrentViewport();
+                }, 300);
               };
             }
 
