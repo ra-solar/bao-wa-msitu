@@ -9,7 +9,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
-    <title>Bao wa Msitu debug v03</title>
+    <title>Bao wa Msitu debug v04</title>
 
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
@@ -42,18 +42,8 @@
         transform-origin: center center;
       }
 
-      #unity-container.unity-desktop.is-browser-fullscreen {
-        position: fixed;
-        inset: 0;
-        left: 0;
-        top: 0;
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
-        transform: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      #unity-container.unity-desktop.is-presentation-mode {
+        z-index: 100;
       }
 
       #unity-container.unity-mobile {
@@ -74,13 +64,6 @@
       #unity-container.unity-desktop #unity-canvas {
         width: 960px !important;
         height: 540px !important;
-        background: #000;
-        display: block;
-      }
-
-      #unity-container.unity-desktop.is-browser-fullscreen #unity-canvas {
-        width: min(100vw, calc(100vh * 16 / 9)) !important;
-        height: min(100vh, calc(100vw * 9 / 16)) !important;
         background: #000;
         display: block;
       }
@@ -108,13 +91,8 @@
       #unity-container.unity-desktop #unity-footer {
         position: absolute;
         right: 0;
-        bottom: -44px;
+        bottom: -52px;
         z-index: 10;
-      }
-
-      #unity-container.unity-desktop.is-browser-fullscreen #unity-footer {
-        right: 12px;
-        bottom: 12px;
       }
 
       #unity-container.unity-mobile #unity-footer {
@@ -123,6 +101,7 @@
 
       #unity-fullscreen-button {
         opacity: 0.85;
+        cursor: pointer;
       }
 
       #unity-warning {
@@ -178,7 +157,7 @@
       <div id="unity-warning"></div>
 
       <div id="unity-footer">
-        <div id="unity-fullscreen-button" title="Fullscreen"></div>
+        <div id="unity-fullscreen-button" title="Presentation mode"></div>
       </div>
     </div>
 
@@ -193,10 +172,13 @@
       var gameAspectRatio = 16 / 9;
       var desktopBaseWidth = 960;
       var desktopBaseHeight = 540;
+      var presentationMode = false;
 
       function isMobileDevice() {
         var userAgentIsMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+        // Modern iPads often identify as "Macintosh" in Safari,
+        // so this catches touch-based iPad/tablet behaviour.
         var isTouchTablet =
           navigator.platform === "MacIntel" &&
           navigator.maxTouchPoints &&
@@ -219,17 +201,6 @@
 
         document.body.classList.toggle("is-mobile", mobile);
         document.body.classList.toggle("is-portrait", portrait);
-      }
-
-      function isBrowserFullscreen() {
-        return (
-          document.fullscreenElement === unityContainer ||
-          document.webkitFullscreenElement === unityContainer
-        );
-      }
-
-      function updateFullscreenClass() {
-        unityContainer.classList.toggle("is-browser-fullscreen", isBrowserFullscreen());
       }
 
       function getVisibleViewport() {
@@ -292,42 +263,19 @@
           return;
         }
 
-        updateFullscreenClass();
+        unityContainer.classList.toggle("is-presentation-mode", presentationMode);
 
         canvas.width = desktopBaseWidth;
         canvas.height = desktopBaseHeight;
 
-        if (isBrowserFullscreen()) {
-          unityContainer.style.left = "";
-          unityContainer.style.top = "";
-          unityContainer.style.width = "";
-          unityContainer.style.height = "";
-          unityContainer.style.setProperty("--desktop-scale", 1);
-
-          var fullscreenWidth = window.innerWidth;
-          var fullscreenHeight = window.innerHeight;
-
-          var canvasWidth = fullscreenWidth;
-          var canvasHeight = canvasWidth / gameAspectRatio;
-
-          if (canvasHeight > fullscreenHeight) {
-            canvasHeight = fullscreenHeight;
-            canvasWidth = canvasHeight * gameAspectRatio;
-          }
-
-          canvas.style.width = canvasWidth + "px";
-          canvas.style.height = canvasHeight + "px";
-          canvas.style.left = "";
-          canvas.style.top = "";
-          return;
-        }
-
         var availableWidth = window.innerWidth;
         var availableHeight = window.innerHeight;
 
+        var verticalReserve = presentationMode ? 0 : 64;
+
         var scale = Math.min(
           availableWidth / desktopBaseWidth,
-          availableHeight / desktopBaseHeight
+          (availableHeight - verticalReserve) / desktopBaseHeight
         );
 
         scale = Math.max(0.1, scale);
@@ -355,22 +303,9 @@
         }
       }
 
-      function toggleBrowserFullscreen() {
-        if (isBrowserFullscreen()) {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          }
-
-          return;
-        }
-
-        if (unityContainer.requestFullscreen) {
-          unityContainer.requestFullscreen();
-        } else if (unityContainer.webkitRequestFullscreen) {
-          unityContainer.webkitRequestFullscreen();
-        }
+      function togglePresentationMode() {
+        presentationMode = !presentationMode;
+        fitCanvasToCurrentViewport();
       }
 
       updateOrientationClass();
@@ -387,14 +322,6 @@
         setTimeout(function () {
           fitCanvasToCurrentViewport();
         }, 700);
-      });
-
-      document.addEventListener("fullscreenchange", function () {
-        fitCanvasToCurrentViewport();
-      });
-
-      document.addEventListener("webkitfullscreenchange", function () {
-        fitCanvasToCurrentViewport();
       });
 
       if (window.visualViewport) {
@@ -481,11 +408,7 @@
 
             if (fullscreenButton != null) {
               fullscreenButton.onclick = () => {
-                toggleBrowserFullscreen();
-
-                setTimeout(function () {
-                  fitCanvasToCurrentViewport();
-                }, 300);
+                togglePresentationMode();
               };
             }
 
