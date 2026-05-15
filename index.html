@@ -9,7 +9,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
-    <title>Bao wa Msitu debug v04</title>
+    <title>Bao wa Msitu debug v05</title>
 
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
@@ -40,10 +40,6 @@
         background: #000;
         transform: translate(-50%, -50%) scale(var(--desktop-scale, 1));
         transform-origin: center center;
-      }
-
-      #unity-container.unity-desktop.is-presentation-mode {
-        z-index: 100;
       }
 
       #unity-container.unity-mobile {
@@ -81,27 +77,11 @@
       }
 
       #unity-footer {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        background: transparent;
-        padding: 8px 12px;
-      }
-
-      #unity-container.unity-desktop #unity-footer {
-        position: absolute;
-        right: 0;
-        bottom: -52px;
-        z-index: 10;
-      }
-
-      #unity-container.unity-mobile #unity-footer {
         display: none !important;
       }
 
       #unity-fullscreen-button {
-        opacity: 0.85;
-        cursor: pointer;
+        display: none !important;
       }
 
       #unity-warning {
@@ -155,10 +135,6 @@
       </div>
 
       <div id="unity-warning"></div>
-
-      <div id="unity-footer">
-        <div id="unity-fullscreen-button" title="Presentation mode"></div>
-      </div>
     </div>
 
     <div id="rotate-overlay">
@@ -172,7 +148,6 @@
       var gameAspectRatio = 16 / 9;
       var desktopBaseWidth = 960;
       var desktopBaseHeight = 540;
-      var presentationMode = false;
 
       function isMobileDevice() {
         var userAgentIsMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -263,19 +238,15 @@
           return;
         }
 
-        unityContainer.classList.toggle("is-presentation-mode", presentationMode);
-
         canvas.width = desktopBaseWidth;
         canvas.height = desktopBaseHeight;
 
         var availableWidth = window.innerWidth;
         var availableHeight = window.innerHeight;
 
-        var verticalReserve = presentationMode ? 0 : 64;
-
         var scale = Math.min(
           availableWidth / desktopBaseWidth,
-          (availableHeight - verticalReserve) / desktopBaseHeight
+          availableHeight / desktopBaseHeight
         );
 
         scale = Math.max(0.1, scale);
@@ -301,11 +272,6 @@
         } else {
           fitCanvasToDesktopViewport();
         }
-      }
-
-      function togglePresentationMode() {
-        presentationMode = !presentationMode;
-        fitCanvasToCurrentViewport();
       }
 
       updateOrientationClass();
@@ -403,14 +369,6 @@
         })
           .then((unityInstance) => {
             document.querySelector("#unity-loading-bar").style.display = "none";
-
-            var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-
-            if (fullscreenButton != null) {
-              fullscreenButton.onclick = () => {
-                togglePresentationMode();
-              };
-            }
 
             fitCanvasToCurrentViewport();
           })
